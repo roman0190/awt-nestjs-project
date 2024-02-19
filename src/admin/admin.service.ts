@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AdminLoginDto, AdminRegistrationDto } from './admin.dto';
+import { AdminLoginDto, AdminRegistrationDto, AdminAuthDto} from './admin.dto';
 
 @Injectable()
 export class AdminService {
@@ -40,5 +40,11 @@ export class AdminService {
 
   putUser(userId: string): { message: string } {
     return { message: `User with ID ${userId} updated successfully` };
+  }
+
+  AdminAuth(AdminAuthdto:AdminAuthDto){
+
+    return {message:" Data Updated successfully"};
+
   }
 }
