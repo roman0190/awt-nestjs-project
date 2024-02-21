@@ -19,20 +19,6 @@ export class SellerController {
   req() {
     return 'hello';
   }
-  @Post('register')
-  registerUser(@Body() user: any): object {
-    return this.sellerService.registerUser(user);
-  }
-
-  @Put('/login')
-  loginUser(@Body() user: any): object {
-    return this.sellerService.login(user);
-  }
-
-  @Get('/logout')
-  logout(): object {
-    return this.sellerService.logout();
-  }
 
   @Post('/create-gig')
   create(@Body() data: any): object {

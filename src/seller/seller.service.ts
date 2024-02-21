@@ -29,29 +29,6 @@ let gigs: any = [];
 
 @Injectable()
 export class SellerService {
-  registerUser(user: UserDTO): object {
-    sellers.push(user);
-    return { ...user, success: true };
-  }
-
-  login(creds: { email: string; password: string }): object {
-    console.log(creds);
-    let user = sellers.find(
-      (u) => u.email === creds.email && u.password === creds.password,
-    );
-    if (!user) {
-      return { success: false };
-    }
-
-    (auth.loggedIn = true), (auth.user = user);
-    return { ...user, success: true };
-  }
-
-  logout(): object {
-    (auth.loggedIn = false), (auth.user = null);
-    return { success: true };
-  }
-
   createGig(data: any): object {
     gigs.push(data);
     return { success: true, ...data };
