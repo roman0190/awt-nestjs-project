@@ -1,6 +1,9 @@
-import { IsString, IsEmail, Matches, IsDateString, IsUrl, IsNotEmpty, MaxLength } from 'class-validator';
+import { IsString, IsEmail, Matches, IsDateString, IsUrl, IsNotEmpty, MaxLength, } from 'class-validator';
 
 export class AdminRegistrationDto {
+   
+    id:number
+
     @IsString()
     username: string;
 
