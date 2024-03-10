@@ -1,52 +1,57 @@
-import { Injectable } from '@nestjs/common';
-import { AdminLoginDto, AdminRegistrationDto } from './dto/admin.dto';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {  AdminRegDto, logDto} from './dto/admin.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Admin } from './entities/admin.entity';
+import { AdminRegEntity } from './entities/admin.entity';
+import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AdminService {
+  
   constructor(
-    @InjectRepository(Admin)
-    private readonly adminRepository: Repository<Admin>,
+    
+    @InjectRepository(AdminRegEntity)
+    private readonly adminRepository: Repository<AdminRegEntity>,
+    private jwtService: JwtService
   ) {}
 
-  async adminRegistration(adminRegistration: AdminRegistrationDto):Promise<Admin>  {
-    return await this.adminRepository.save(adminRegistration);
-  }
+  async AdminReg(adminReg: AdminRegDto): Promise<object> {
+    const { email } = adminReg;
 
-  async getAllUsers(): Promise<Admin[]> {
-    return await this.adminRepository.find();
-  }
-
-  async getUserById(id: number): Promise<Admin> {
-    return await this.adminRepository.findOneBy({id:id});
+    const existingUser = await this.adminRepository.findOne({ where: { email } });
+    if (existingUser) {
+      return { message: 'Email already exists' };
+    }
+    else{
+      try {
+        await this.adminRepository.save(adminReg);
+        return { message: 'Admin registration successful' };
+      } catch (error) {
+        // console.error('Error occurred while saving admin:', error.message);
+        throw new Error('Failed to save admin');
+      }
+    }
   }
   
-  async deleteUser(id: number): Promise<void> {
-     await this.adminRepository.delete(id);
-
+  async Adminlogin(logdata: logDto) {
+    const { email, password } = logdata;
+    const user = await this.adminRepository.findOne({where:{email}});
+    
+    if (user) {
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (isPasswordValid) {
+        const payload = logdata;
+        return {
+          access_token: await this.jwtService.signAsync(payload),
+        };
+      } else {
+        throw new UnauthorizedException();
+      }
+    } else {
+      throw new UnauthorizedException();
+    }
   }
+
   
-  async updateUser(id: number,updatedUser: AdminRegistrationDto):Promise<Admin>{
-    await this.adminRepository.update(id, updatedUser);
-    return this.adminRepository.findOneBy({id:id});
-  }
-
-  login(AdminLoginDto: AdminLoginDto) {
-    return { message: `Dear, ${AdminLoginDto.username} Login Successful` };
-  }
-  logoutUsers(): object {
-    return { message: 'Logout Successfully' };
-  }
-
-  createUser(createUser: object) {
-    return { message: 'User created successfully' };
-  }
-
-  editUser(userId: string, editUser: object) {
-    return { message: `User with ID ${userId} edited successfully` };
-  }
-
-
 }

@@ -1,43 +1,8 @@
 import { IsString, IsEmail, Matches, IsDateString, IsUrl, IsNotEmpty, MaxLength, } from 'class-validator';
 
-export class AdminRegistrationDto {
-   
+export class AdminRegDto {
+
     id:number
-
-    @IsString()
-    username: string;
-
-    @IsEmail()
-    email: string;
-
-   @IsString()
-   password: string;
-}
-
-export class AdminLoginDto {
-
-    @IsString()
-    username: string;
-
-   @IsString()
-   password: string;
-}
-
-export class CreateUserDto {
-    
-    @IsString()
-    username: string;
-
-    @IsEmail()
-    email: string;
-
-   @IsString()
-   password: string;
-
-}
-
-
-export class AdminAuthDto {
 
     @IsString()
     @Matches(/^[^\d]+$/, { message: 'Name field should not contain any numbers' })
@@ -54,13 +19,20 @@ export class AdminAuthDto {
     @IsDateString() 
     date: string
 
-    @IsNotEmpty({message: "At least 1 platform link needed"})
-    @IsUrl({}, { message: 'Invalid URL format for social media link' })
-    social_link:string
-    
     @MaxLength(11, { message: 'Number field must be at most 11 characters long' })
     @Matches(/^[0-9]+$/, { message: 'Phone number field must contain only digits' })
     number: string;
 
    
+}
+
+export class logDto {
+    @IsEmail()
+    @IsNotEmpty({message:"Enter Email first."})
+    @MaxLength(30, { message: 'Email Address field must be at most 30 characters long' })
+    email: string;
+
+    @IsString()
+    @IsNotEmpty({message:"Enter passoword first."})
+    password:string
 }

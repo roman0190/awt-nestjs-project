@@ -15,70 +15,51 @@ import {
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import {
-  AdminAuthDto,
-  AdminLoginDto,
-  AdminRegistrationDto,
-  CreateUserDto,
+  AdminRegDto, logDto,
 } from './dto/admin.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { MulterError, diskStorage } from 'multer';
+import * as bcrypt from 'bcrypt';
 
-@Controller()
+@Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  @Post('admin/registration')
-  @UsePipes(new ValidationPipe())
-  async adminRegistration(@Body() adminRegistration: AdminRegistrationDto) {
-    console.log('Rrgistration Info:', adminRegistration);
-    return await this.adminService.adminRegistration(adminRegistration);
-  }
-  @Get('admin/get-all-user')
-  async getAllUsers() {
-    return await this.adminService.getAllUsers();
-  }
-
-  @Get('admin/:userId')
-  async getUserById(@Param('userId') id: number) {
-    return this.adminService.getUserById(id);
-  }
-
-  @Delete('admin/delete-user/:userId')
-  deleteUser(@Param('userId') id: number) {
-    return this.adminService.deleteUser(id);
-  }
   
-  @Put('admin/update-user/:userId')
-  updateUser(@Param('userId') id: number, @Body() updatedUser:AdminRegistrationDto) {
-    return this.adminService.updateUser(id,updatedUser);
-  }
+  @Post('register')
 
-  @Post('admin/login')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      fileFilter: (req, file, cb) => {
+        if (file.originalname.match(/\.(jpg|webp|png|jpeg)$/)) {
+          cb(null, true);
+        } else {
+          cb(new MulterError('LIMIT_UNEXPECTED_FILE', 'image'), false);
+        }
+      },
+      limits: { fileSize: 300000 },
+      storage: diskStorage({
+        destination: './uploads/profilePic',
+        filename: (req, file, cb) => {
+          cb(null, Date.now() + file.originalname);
+        },
+      }),
+    }),
+  )
   @UsePipes(new ValidationPipe())
-  adminLogin(@Body() AdminLoginDto: AdminLoginDto) {
-    console.log('Login Info:', AdminLoginDto);
-    return this.adminService.login(AdminLoginDto);
+  async AdminReg(@Body() adminReg: AdminRegDto, @UploadedFile() file: Express.Multer.File) {
+    const salt = await bcrypt.genSalt();
+    const hassedpassed = await bcrypt.hash(adminReg.password, salt);
+
+    adminReg.password = hassedpassed
+    
+    return await this.adminService.AdminReg(adminReg);
   }
 
-  @Post('admin/logout')
-  adminLogout() {
-    return this.adminService.logoutUsers();
-  }
-
-  @Post('admin/createUser')
-  createUser(@Body() createUser: CreateUserDto) {
-    return this.adminService.createUser(createUser);
-  }
-
-  @Post('admin/upload')
-  @UseInterceptors(FileInterceptor('file'))
-  uploadFile(@UploadedFile() file: Express.Multer.File) {
-    console.log(file);
-    return file;
-  }
-
-  @Patch('admin/edit-user/:userId')
-  editUser(@Param('userId') userId: string, @Body() editUserDto: object) {
-    return this.adminService.editUser(userId, editUserDto);
+  @Post('login')
+  @UsePipes(new ValidationPipe())
+  async Adminlogin(@Body() logdata:logDto){
+    return await this.adminService.Adminlogin(logdata)
   }
 
 
