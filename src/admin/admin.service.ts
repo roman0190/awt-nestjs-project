@@ -5,14 +5,16 @@ import { Repository } from 'typeorm';
 import { AdminRegEntity } from './entities/admin.entity';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { UserEntity } from './entities/user.entity';
 
 @Injectable()
 export class AdminService {
   
   constructor(
-    
     @InjectRepository(AdminRegEntity)
     private readonly adminRepository: Repository<AdminRegEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
     private jwtService: JwtService
   ) {}
 
@@ -21,7 +23,7 @@ export class AdminService {
 
     const existingUser = await this.adminRepository.findOne({ where: { email } });
     if (existingUser) {
-      return { message: 'Email already exists' };
+      return { message: 'Admin already exists' };
     }
     else{
       try {
@@ -33,8 +35,18 @@ export class AdminService {
       }
     }
   }
+
+  async getAdminInfo(adminId: number):Promise<AdminRegEntity> {
+    return await this.adminRepository.findOne({
+      where:{id:adminId},
+      relations : {
+        users:true
+      }
+    });
+
+  }
   
-  async Adminlogin(logdata: logDto) {
+  async Adminlogin(logdata: logDto):Promise<{ access_token: string }> {
     const { email, password } = logdata;
     const user = await this.adminRepository.findOne({where:{email}});
     
@@ -50,6 +62,24 @@ export class AdminService {
       }
     } else {
       throw new UnauthorizedException();
+    }
+  }
+
+  async CreateUser(userdata:UserEntity):Promise<object>{
+    const { email } = userdata;
+
+    const existingUser = await this.userRepository.findOne({ where: { email } });
+    if (existingUser) {
+      return { message: 'User already exists' };
+    }
+    else{
+      try {
+        await this.userRepository.save(userdata);
+        return { message: 'User Created successfully' };
+      } catch (error) {
+        // console.error('Error occurred while saving admin:', error.message);
+        throw new Error('Failed to create user');
+      }
     }
   }
 

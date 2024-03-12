@@ -12,6 +12,7 @@ import {
   UsePipes,
   UseInterceptors,
   UploadedFile,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import {
@@ -20,6 +21,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MulterError, diskStorage } from 'multer';
 import * as bcrypt from 'bcrypt';
+import { UserDto } from './dto/user.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -48,13 +50,21 @@ export class AdminController {
   )
   @UsePipes(new ValidationPipe())
   async AdminReg(@Body() adminReg: AdminRegDto, @UploadedFile() file: Express.Multer.File) {
+    const role ='admin'
     const salt = await bcrypt.genSalt();
     const hassedpassed = await bcrypt.hash(adminReg.password, salt);
 
     adminReg.password = hassedpassed
-    
+    adminReg.role = role
     return await this.adminService.AdminReg(adminReg);
+    // console.log(file.path)
   }
+
+  @Get(':adminId')
+  async getAdminInfo(@Param('adminId',ParseIntPipe) adminId: number) {
+    return await this.adminService.getAdminInfo(adminId);
+  }
+
 
   @Post('login')
   @UsePipes(new ValidationPipe())
@@ -62,5 +72,10 @@ export class AdminController {
     return await this.adminService.Adminlogin(logdata)
   }
 
+  @Post('users/create-user')
+  @UsePipes(new ValidationPipe())
+  async CreateUser(@Body() userdata : UserDto) {
+      return await this.adminService.CreateUser(userdata)
+  }
 
 }

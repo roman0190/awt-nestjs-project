@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { UserEntity } from "./user.entity";
 
 @Entity("AdminRegistration")
 export class AdminRegEntity {
@@ -19,4 +20,12 @@ export class AdminRegEntity {
   
     @Column({ type: 'varchar', length: 11 })
     number: string;
+
+    @Column({ type: 'varchar', length: 11 })
+    role:string
+
+    @OneToMany(() => UserEntity, user => user.admin ,{cascade : true})
+    users: UserEntity[];
+
   }
+

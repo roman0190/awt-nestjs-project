@@ -1,7 +1,6 @@
 import { IsString, IsEmail, Matches, IsDateString, IsUrl, IsNotEmpty, MaxLength, IsIn, } from 'class-validator';
-import { UserEntity } from '../entities/user.entity';
-
-export class AdminRegDto {
+import { AdminRegEntity } from '../entities/admin.entity';
+export class UserDto {
 
     id:number
 
@@ -25,21 +24,9 @@ export class AdminRegDto {
     number: string;
 
     @IsString()
-    role : string
+    @IsIn(['seller', 'buyer', 'moderator'], { message: 'Invalid role. Must be one of:seller, buyer, moderator' })
+    role: string;
 
-    users: UserEntity[];
+    admin:AdminRegEntity
 
-   
 }
-
-export class logDto {
-    @IsEmail()
-    @IsNotEmpty({message:"Enter Email first."})
-    @MaxLength(30, { message: 'Email Address field must be at most 30 characters long' })
-    email: string;
-
-    @IsString()
-    @IsNotEmpty({message:"Enter passoword first."})
-    password:string
-}
-
