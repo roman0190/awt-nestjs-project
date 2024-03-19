@@ -1,5 +1,7 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { UserEntity } from "./user.entity";
+import { AdditionalInfoEntity } from "./AdditionalInfo.entity";
+
 
 @Entity("AdminRegistration")
 export class AdminRegEntity {
@@ -15,7 +17,7 @@ export class AdminRegEntity {
     @Column({ type: 'varchar', length: 255 })
     password: string;
   
-    @Column({ type: 'timestamp' }) // Assuming your database supports TIMESTAMP type
+    @Column({ type: 'timestamp' }) 
     date: Date;
   
     @Column({ type: 'varchar', length: 11 })
@@ -27,5 +29,7 @@ export class AdminRegEntity {
     @OneToMany(() => UserEntity, user => user.admin ,{cascade : true})
     users: UserEntity[];
 
-  }
+    @OneToOne(() => AdditionalInfoEntity, additionalInfo => additionalInfo.admin, { cascade: true, onDelete: 'CASCADE' })
+    additionalInfo: AdditionalInfoEntity; 
 
+  }
