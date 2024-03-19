@@ -1,5 +1,5 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import {  AdminRegDto, logDto} from './dto/admin.dto';
+import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import {  AdminRegDto, AnnouncementDto, logDto} from './dto/admin.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AdminRegEntity } from './entities/admin.entity';
@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UserEntity } from './entities/user.entity';
 import { GigEntity } from './entities/gig.entity';
 import { AdditionalInfoEntity } from './entities/AdditionalInfo.entity';
+import { AnnouncementEntity } from './entities/announcement.entity';
 
 
 @Injectable()
@@ -22,6 +23,8 @@ export class AdminService {
     private readonly gigRepository: Repository<GigEntity>,
     @InjectRepository(AdditionalInfoEntity)
     private readonly additionalInfoRepository: Repository<AdditionalInfoEntity>,
+    @InjectRepository(AnnouncementEntity)
+    private readonly announcementRepository: Repository<AnnouncementEntity>,
     private jwtService: JwtService
    
   ) {}
@@ -68,24 +71,25 @@ export class AdminService {
     return await this.adminRepository.find();
   }
 //4
-    async getAdminInfo(adminId: number):Promise<AdminRegEntity> {
+  async getAdminInfo(adminId: number):Promise<AdminRegEntity> {
       return await this.adminRepository.findOne({
         where:{id:adminId},
         relations : {
           users:true,
           additionalInfo:true,
+          announcements:true
         }
       });
 
     }
 
 //5
-    async deleteAdminInfo(adminId: number): Promise<void> {
+    async deleteAdminInfo(adminId: number): Promise<any> {
       
       const adminToDelete = await this.adminRepository.findOne({where:{id:adminId},relations:{users:true}});
 
       if (!adminToDelete) {
-        throw new Error(`Admin with ID ${adminId} not found.`);
+        return (`Admin with ID ${adminId} not found.`);
       }
 
       
@@ -111,26 +115,53 @@ export class AdminService {
       return await this.adminRepository.save(userToUpdate);
     }
 //7
-async AddmoreInfo(additionalInfo: AdditionalInfoEntity, token: string): Promise<any> {
-  try {
-    const decodedToken = this.jwtService.verify(token); 
-    const adminId = decodedToken.id;
-    additionalInfo.admin = adminId;
+  async AddmoreInfo(additionalInfo: AdditionalInfoEntity, token: string): Promise<any> {
+    try {
+      const decodedToken = this.jwtService.verify(token); 
+      const adminId = decodedToken.id;
+      additionalInfo.admin = adminId;
 
-    const findInfo = await this.additionalInfoRepository.findOne({where:{admin:adminId}})
+      const findInfo = await this.additionalInfoRepository.findOne({where:{admin:adminId}})
 
-    Object.assign(findInfo,additionalInfo);
-    
-    return await this.additionalInfoRepository.save(findInfo);
-  } catch (error) {
-    return {message:'Information Already added'};
+      Object.assign(findInfo,additionalInfo);
+      
+      return await this.additionalInfoRepository.save(findInfo);
+    } catch (error) {
+      return {message:'Information Already added'};
+    }
   }
-}
-
-
 //8
+  async sendAnnouncement(announcementDto: AnnouncementDto,token:string): Promise<AnnouncementEntity> {
+    try {
+      const decodedToken = this.jwtService.verify(token); 
+      const adminId = decodedToken.id;
+      announcementDto.admin = adminId
+      return await this.announcementRepository.save(announcementDto);
+    } catch (error) {
+      // console.error('Error occurred while sending announcement:', error);
+      throw new InternalServerErrorException('Failed to send announcement');
+    }
+  }
+ //9 
+  async deleteAnnouncement(id: number, token: string): Promise<any> {
+    const decodedToken = this.jwtService.verify(token);
+    const adminId = decodedToken.id;
 
-    async CreateUser(userdata:UserEntity,token:string):Promise<object>{
+    const announcement = await this.announcementRepository.findOne({where:{id:id},relations:{admin:true}});
+    if (!announcement) {
+      return ('Announcement not found');
+    }
+
+    if (announcement.admin.id!== adminId) {
+      return ('You are not authorized to delete this announcement');
+    }
+    // await this.announcementRepository.remove(announcement);
+    return ("Deleted Successfully")
+  }
+
+//10
+
+    async CreateUser(userdata:UserEntity,token:string):Promise<any>{
      try{
         const decodedToken = this.jwtService.verify(token); 
         const adminId = decodedToken.id;
@@ -147,43 +178,45 @@ async AddmoreInfo(additionalInfo: AdditionalInfoEntity, token: string): Promise<
             return { message: 'User Created successfully' };
           } catch (error) {
             // console.error('Error occurred while saving admin:', error.message);
-            throw new Error('Failed to create user');
+            return ('Failed to create user');
           }
         }
      }catch{
       return {message:'Invalid.'}
      }  
     }
-//9
+
+//11
     async getAllUsers(): Promise<UserEntity[]> {
       return await this.userRepository.find();
     }
-//10
-async editUser(userID: number, editData: Partial<UserEntity>): Promise<UserEntity> {
 
-  const userToUpdate = await this.userRepository.findOne({where:{id:userID}});
+//12
+  async editUser(userID: number, editData: Partial<UserEntity>): Promise<any> {
 
-  if (!userToUpdate) {
-    throw new Error(`User with ID ${userID} not found.`);
+    const userToUpdate = await this.userRepository.findOne({where:{id:userID}});
+
+    if (!userToUpdate) {
+      return (`User with ID ${userID} not found.`);
+    }
+
+    Object.assign(userToUpdate, editData);
+
+    return await this.userRepository.save(userToUpdate);
   }
 
-  Object.assign(userToUpdate, editData);
-
-  return await this.userRepository.save(userToUpdate);
-}
-//11
-
-async deleteUser(userID: number): Promise<void> {
+//13
+async deleteUser(userID: number): Promise<any> {
       
   const userToDelete = await this.userRepository.findOne({where:{id:userID}});
 
   if (!userToDelete) {
-    throw new Error(`Admin with ID ${userID} not found.`);
+    return (`Admin with ID ${userID} not found.`);
   }
 
   await this.userRepository.remove(userToDelete);
 }
-//12
+//13
 async getUnapprovedGigs(): Promise<GigEntity[]> {
   try {
     return await this.gigRepository.find({ where: { approved: false } });
@@ -198,17 +231,19 @@ async getApprovedGigs(): Promise<GigEntity[]> {
     console.error('Error fetching approved gigs:', error.message);
   }
 }
-//13
-async toggleGigApproval(gigId: number): Promise<GigEntity> {
+
+//14
+async toggleGigApproval(gigId: number): Promise<any> {
   const gig = await this.gigRepository.findOne({ where: { id: gigId } });
   if (!gig) {
-    throw new Error(`Gig with ID ${gigId} not found.`);
+    return (`Gig with ID ${gigId} not found.`);
   }
 
   gig.approved = !gig.approved; 
   return await this.gigRepository.save(gig);
 }
-//14 
+
+//15
 async logout() {
  const payload = {
       name :"Romppan",

@@ -12,7 +12,7 @@ export class AdditionalInfoEntity {
   @Column({ length: 30, nullable: true })
   passport_no: string;
 
-  @OneToOne(() => AdminRegEntity, admin => admin.additionalInfo)
+  @OneToOne(() => AdminRegEntity, admin => admin.additionalInfo,{onDelete: "CASCADE",onUpdate:"CASCADE"})
   @JoinColumn({name:"admin_id"})
   admin: AdminRegEntity;
 

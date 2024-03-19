@@ -20,7 +20,7 @@ import {
 import { AdminService } from './admin.service';
 import {
   AdditionalInfoDto,
-  AdminRegDto, logDto,
+  AdminRegDto, AnnouncementDto, logDto,
 } from './dto/admin.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MulterError, diskStorage } from 'multer';
@@ -110,8 +110,23 @@ async addMoreInfo(@Body() additionalInfo: AdditionalInfoDto, @Req() req){
   return this.adminService.AddmoreInfo(additionalInfo, token);
   
 }
+//8
+@Post('send-announcement')
+@UseGuards(AuthGuard) 
+  async sendAnnouncement(@Body() announcementDto: AnnouncementDto,@Req() req) {
+    const token = req.headers.authorization.replace('Bearer ', ''); 
+    return this.adminService.sendAnnouncement(announcementDto,token);
+  }
+//9
+@Delete('delete-announcement/:id')
+@UseGuards(AuthGuard) 
+async deleteAnnouncement(@Param('id',ParseIntPipe) id:number,@Req() req){
+  const token = req.headers.authorization.replace('Bearer ', ''); 
+    return this.adminService.deleteAnnouncement(id,token);
+}
 
-//8 Admin Manage Users
+
+//10 Admin Manage Users
   @Post('users/create-user')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe())
@@ -119,28 +134,28 @@ async addMoreInfo(@Body() additionalInfo: AdditionalInfoDto, @Req() req){
       const token = req.headers.authorization.replace('Bearer ', ''); 
       return await this.adminService.CreateUser(userdata,token)
   }
-//9
+
+//11
   @Get('users/all')
   async getAllUsers() {
     return await this.adminService.getAllUsers();
   }
-//10
 
+//12
   @Patch('users/edit-user/:userID')
   //@UseGuards(AuthGuard)
   async editUser(@Param("userID",ParseIntPipe) userID, @Body()editdata:Partial<UserEntity>){
     return await this.adminService.editUser(userID,editdata)
   }
 
-//11
-
+//13
   @Delete('users/delete/:userId')
   //@UseGuards(AuthGuard)
   async deleteUser(@Param('userId',ParseIntPipe) userID: number) {
     return await this.adminService.deleteUser(userID);
   }
 
-  //12 Admin Manage Users gigs 
+//14 Admin Manage Users gigs 
   @Get('gigs/:status')
   //@UseGuards(AuthGuard)
   async getGigsByStatus(@Param('status') status: string): Promise<GigEntity[]> {
@@ -152,14 +167,14 @@ async addMoreInfo(@Body() additionalInfo: AdditionalInfoDto, @Req() req){
       throw new Error('Invalid status parameter');
     }
   }
-//13
+//15
   @Post('gigs/control-approval/:gigId')
   //@UseGuards(AuthGuard)
   async toggleGigApproval(@Param('gigId',ParseIntPipe) gigId: number): Promise<GigEntity> {
     return await this.adminService.toggleGigApproval(gigId);
   }
 
-//14
+//16
 @Patch('logout')
 // @UseGuards(AuthGuard)
 async logout(){

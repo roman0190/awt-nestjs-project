@@ -27,6 +27,8 @@ export class UserDto {
     @IsIn(['seller', 'buyer', 'moderator'], { message: 'Invalid role. Must be one of:seller, buyer, moderator' })
     role: string;
 
+    
+
     admin:AdminRegEntity
 
 }

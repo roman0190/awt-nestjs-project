@@ -8,6 +8,7 @@ import { jwtConstants } from './constants';
 import { UserEntity } from './entities/user.entity';
 import { GigEntity } from './entities/gig.entity';
 import { AdditionalInfoEntity } from './entities/AdditionalInfo.entity';
+import { AnnouncementEntity } from './entities/announcement.entity';
 
 @Module({
   imports: [AdminModule,
@@ -15,7 +16,7 @@ import { AdditionalInfoEntity } from './entities/AdditionalInfo.entity';
       global: true,
       secret: jwtConstants.secret,
       signOptions: { expiresIn: '30m' },
-    }),TypeOrmModule.forFeature([AdminRegEntity,UserEntity,GigEntity,AdditionalInfoEntity])],
+    }),TypeOrmModule.forFeature([AdminRegEntity,UserEntity,GigEntity,AdditionalInfoEntity,AnnouncementEntity])],
   providers: [AdminService],
   controllers: [AdminController]
 })

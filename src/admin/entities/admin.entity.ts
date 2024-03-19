@@ -1,6 +1,7 @@
 import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { UserEntity } from "./user.entity";
 import { AdditionalInfoEntity } from "./AdditionalInfo.entity";
+import { AnnouncementEntity } from "./announcement.entity";
 
 
 @Entity("AdminRegistration")
@@ -29,7 +30,10 @@ export class AdminRegEntity {
     @OneToMany(() => UserEntity, user => user.admin ,{cascade : true})
     users: UserEntity[];
 
-    @OneToOne(() => AdditionalInfoEntity, additionalInfo => additionalInfo.admin, { cascade: true, onDelete: 'CASCADE' })
+    @OneToOne(() => AdditionalInfoEntity, additionalInfo => additionalInfo.admin, { cascade: true})
     additionalInfo: AdditionalInfoEntity; 
+
+    @OneToMany(() => AnnouncementEntity, announcement => announcement.admin,{ cascade: true})
+    announcements: AnnouncementEntity[];
 
   }

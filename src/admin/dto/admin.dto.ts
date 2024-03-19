@@ -1,6 +1,7 @@
 import { IsString, IsEmail, Matches, IsDateString, IsUrl, IsNotEmpty, MaxLength, IsIn, } from 'class-validator';
 import { UserEntity } from '../entities/user.entity';
 import { AdminRegEntity } from '../entities/admin.entity';
+import { AnnouncementEntity } from '../entities/announcement.entity';
 
 export class AdminRegDto {
 
@@ -28,6 +29,8 @@ export class AdminRegDto {
     role?: string
 
     users: UserEntity[];
+
+    announcements:AnnouncementEntity[]
 
    
 }
@@ -61,3 +64,15 @@ export class logDto {
 
 }
 
+export class AnnouncementDto {
+    @IsNotEmpty()
+    @IsString()
+    @MaxLength(255)
+    title: string;
+  
+    @IsNotEmpty()
+    @IsString()
+    content: string;
+
+    admin : AnnouncementEntity
+  }
