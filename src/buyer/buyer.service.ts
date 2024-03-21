@@ -1,108 +1,129 @@
-import {Injectable} from "@nestjs/common";
 
+// buyer.service.ts
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Buyer } from './buyer.entity';
+import { Address } from './address.entity';
+import { Order } from './order.entity';
+//import { ManagerEntity } from "src/manager/manager.entity";
+import { JwtService } from '@nestjs/jwt';
+import { BuyerDto, loginDTO, addressDto, orderDto } from "./buyer.dto";
 
 @Injectable()
-export class BuyerService{
+export class BuyerService {
+  
+  constructor(
+    @InjectRepository(Buyer)
+    private readonly buyerRepository: Repository<Buyer>,
+    private jwtService: JwtService,
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
+    @InjectRepository(Address)
+    private readonly addressRepository: Repository<Address>
+  ) {}
 
-register(userData:any)
-{
-    return {message: 'buyer account register successfully'};
-}
+  getUsers(): Promise<Buyer[]> {
+    return this.buyerRepository.find();
+  }
+  getUsersById(id: number): object { //Promise<Buyer>
+      return this.buyerRepository.findOneBy({Id:id});
+  }
+  getUsersByNameAndId(name: string, id: string): object {
+      return {
+          message: "You id is " + name +
+              " and your id is " + id
+      };
 
- login(credentials:any)
-{
-    return credentials;
-}
+  }
 
- browseGigs()
-{
-    return {gigs: []};
-}
+  async addBuyer(myobj: BuyerDto): Promise<Buyer> {
+      return await this.buyerRepository.save(myobj);
+  }
+  async getAllBuyer(): Promise<Buyer[]> {
+      return this.buyerRepository.find({ relations: ['']});
+  }
+  
+  async findOne( logindata:loginDTO): Promise<any> {
+    return await this.buyerRepository.findOneBy({email:logindata.email});
+  }
 
- searchGigs(keywords:string)
-{
-    return {results: []};
-}
+  async createBuyer(buyer: BuyerDto): Promise<Buyer> {
+    return  this.buyerRepository.save(buyer);
+  }
 
-viewGig(gigId:string)
-{
-    return{gigId,}
-}
+  async modifyPhoneNumber(buyerId: number, newPhoneNumber: string): Promise<Buyer> {
+    const buyer = await this.buyerRepository.findOne({ where: { Id: buyerId } });
+    if (!buyer) {
+      return null;
+    }
+    buyer.phone = newPhoneNumber;
+    return this.buyerRepository.save(buyer);
+  }
 
-placeOrder(gigId:string)
-{
-    return { massage: "Order is Placed"};
-}
+  async getBuyerWithNullFullName(): Promise<Buyer[]> {
+    return this.buyerRepository.createQueryBuilder('buyer')
+      .where('buyer.fullName IS NULL')
+      .getMany();
+  }
 
-messageSeller(sellerId:string, message:any)
-{
-    return {message:'Message sent successfully'};
-}
+  async deleteBuyer(buyerId: number): Promise<void> {
+    // Implementation for deleting a user from the system
+    await this.buyerRepository.delete(buyerId);
+  }
 
-leaveReview(orderid: string, reviewData:any)
-{
-    return {message:'Review left Successfully'};
-}
+  // order
 
-trackOrder(orderId: string) {
-    // Logic to track the status and progress of the specified order
-    return { /* order status and progress data */ };
+  async createOrder(orderDto: orderDto, id:number): Promise<Order> {
+    //const id=1
+    const buyer= await this.buyerRepository.findOneBy({Id:id})
+    //console.log(buyer);
+    const order = new Order
+    order.product=orderDto.product
+    order.buyer = buyer
+    //const order = this.orderRepository.save(orderDto);
+    return this.orderRepository.save(order);
+  }
+
+  async getAllOrders(): Promise<Order[]> {
+    return this.orderRepository.find();
+  }
+
+  async getOrderById(id: number): Promise<Order> {
+    return this.orderRepository.findOneBy({id:id});
+  }
+
+  async updateOrder(id: number, orderDto: orderDto): Promise<Order> {
+    await this.orderRepository.update(id, orderDto);
+    return this.getOrderById(id);
+  }
+
+  async deleteOrder(id: number): Promise<void> {
+    await this.orderRepository.delete(id);
   }
 
 
-choosePaymentMethod(paymentData: any) {
-    // Logic to choose payment method for order transactions
-    return { message: 'Payment method chosen successfully' };
+  // address
+
+  async createAddress(address: addressDto): Promise<Address> {
+    //const address = this.addressRepository.create(addressDto);
+    return this.addressRepository.save(address);
   }
 
-
-createWishlist(wishlistData: any) {
-    // Logic to create a wishlist of favorite gigs
-    return { message: 'Wishlist created successfully' };
+  async getAllAddresses(): Promise<Address[]> {
+    return this.addressRepository.find();
   }
 
-requestCustomization(requestData: any) {
-    // Logic to request customization or modifications from sellers
-    return { message: 'Customization request sent successfully' };
+  async getAddressById(id: number): Promise<Address> {
+    return this.addressRepository.findOneBy({id:id});
   }
 
-
-viewOrderHistory() {
-    // Logic to retrieve and return the history of past orders and transactions
-    return { /* order history data */ };
+  async updateAddress(id: number, addressDto: addressDto): Promise<Address> {
+    await this.addressRepository.update(id, addressDto);
+    return this.getAddressById(id);
   }
 
-
-manageBudget(budgetData: any) {
-    // Logic to manage budget and spending on the platform
-    return { message: 'Budget managed successfully' };
-  } 
-
-
-accessDisputeResolution(issueData: any) {
-    // Logic to access dispute resolution mechanisms for order issues
-    return { message: 'Dispute resolution accessed successfully' };
-  }
-
-receiveGigRecommendations() {
-    // Logic to generate and return personalized gig recommendations based on preferences
-    return { /* gig recommendations data */ };
-  }
-
-customizeNotificationPreferences(preferencesData: any) {
-    // Logic to customize notification preferences for order updates
-    return { message: 'Notification preferences customized successfully' };
-  }
-
-
-reportInappropriateContent(reportData: any) {
-    // Logic to report inappropriate content or behavior on the platform
-    return { message: 'Content reported successfully' };
-  }
-
-
-  accessRealTimeSupport() {
-    // Logic to provide access to real-time support for inquiries or assistance
-    return { message: 'Real-time support accessed successfully' };
+  async deleteAddress(id: number): Promise<void> {
+    await this.addressRepository.delete(id);
   }
 }
