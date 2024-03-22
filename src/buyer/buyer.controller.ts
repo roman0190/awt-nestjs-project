@@ -1,120 +1,161 @@
-import{Controller, Get,Post,Put, Patch, Delete, Param, Query, Body, } from "@nestjs/common";
-import { BuyerService } from "./buyer.service";
+// buyer.entity
+// buyer.controller.ts
+import { Controller, Post, Body, Param, Get, Delete, UsePipes, ValidationPipe, UploadedFile, Res, UseGuards, Query, UseInterceptors, Put, InternalServerErrorException } from '@nestjs/common';
+import { BuyerService } from './buyer.service';
+import { Buyer } from './buyer.entity';
+import {Order} from './order.entity';
+import {Address} from './address.entity';
+//import { BuyerDto, loginDTO } from './buyer.dto';
+import { BuyerDto, loginDTO, addressDto, orderDto } from "./buyer.dto";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { MulterError, diskStorage } from "multer";
+import { AuthGuard } from './auth/auth.guard';
 
 
-@Controller('buyer')  // root Route
-export class BuyerController{
+@Controller('buyer')
+export class BuyerController {
+  orderService: any;
+  addressService: any;
+  constructor(private readonly buyerService: BuyerService) {}
 
-    constructor(private readonly buyerservice: BuyerService){}
-    
-    @Post('register')
-    register(@Body() userData:any)
-    {
-        return this.buyerservice.register(userData)
+  //@UseGuards(AuthGuard)
+    @Get()
+    async getUsers(): Promise<Buyer[]> {
+      try {
+        return this.buyerService.getUsers();
+      } catch (error) {
+        throw new InternalServerErrorException("Failed to fetch users");
+      }
     }
 
-
-    @Post('login')
-    login(@Body() credentials: any)
-    {
-        return this.buyerservice.login(credentials);
+    @Get('users/:id')
+    async getUsersById(@Param('id') id: number): Promise<object> {
+      try {
+        return await this.buyerService.getUsersById(id);
+      } catch (error) {
+        throw new InternalServerErrorException("Failed to fetch user by id");
+      }
     }
 
-    @Post('logout')
-    logout()
-    {
-        return {massage: "Logged out"};
+    @Get('users/')
+    async getUsersByNameAndId(@Query('name') name: string,
+        @Query('id') id: string): Promise<object> {
+          try {
+            return await this.buyerService.getUsersByNameAndId(name, id);
+          } catch (error) {
+            throw new InternalServerErrorException("Failed to fetch users by name and id");
+          }
     }
 
-    @Get('browse-gigs')
-     browseGigs()
-    {
-        return this.buyerservice.browseGigs();
+    @Post('addbuyer')
+    @UseInterceptors(FileInterceptor('myfile',
+        {
+            fileFilter: (req, file, cb) => {
+                if (file.originalname.match(/^.*\.(jpg|webp|png|jpeg)$/))
+                    cb(null, true);
+                else {
+                    cb(new MulterError('LIMIT_UNEXPECTED_FILE', 'image'), false);
+                }
+            },
+            limits: { fileSize: 30000 },
+            storage: diskStorage({
+                destination: './upload',
+                filename: function (req, file, cb) {
+                    cb(null, Date.now() + file.originalname)
+                },
+            })
+        }
+    ))
+
+    @UsePipes(new ValidationPipe)
+    async addUser(@Body() myobj: BuyerDto, @UploadedFile() myfile: Express.Multer.File): Promise<BuyerDto> {
+        myobj.filename = myfile.filename;
+        return this.buyerService.addBuyer(myobj);
     }
 
-    @Get('search-gigs')
-    searchAccount(@Query() query:any)
-    {
-        return this.buyerservice.searchGigs(query.keywords);
+    @Get('/getimage/:name')
+    getImages(@Param('name') name: string, @Res() res) {
+        res.sendFile(name, { root: './upload' })
     }
 
-    @Put('view-gig/:gig_id')
-    viewAccount(@Param('gig_id') gigId:string)
-    {
-        return this.buyerservice.viewGig(gigId);
-    }
-
-    @Get('place-order/:gig_id')
-    placeOrder(@Param('gig_id') gigId:string)
-    {
-        return this.buyerservice.placeOrder(gigId);
-    }
-
-    @Post('message-seller/:seller_id')
-    messageSeller(@Param('seller_id') sellerId:string, @Body() message:any)
-    {
-        return this.buyerservice.messageSeller(sellerId, message);
-    }
-
-    @Post('leave-review/:order_id')
-    leaveReview(@Param('order_id') orderId:string, @Body() reviewData:any)
-    {
-        return this.buyerservice.leaveReview(orderId, reviewData);
-    }
-
-    @Get('track-order/:order_id')
-    trackOrder(@Param('order_id') orderId: string) {
-      return this.buyerservice.trackOrder(orderId);
-    }
-
-    @Post('choose-payment-method')
-    choosePaymentMethod(@Body() paymentData: any) {
-    return this.buyerservice.choosePaymentMethod(paymentData);
-    }
-
-    @Post('create-wishlist')
-    createWishlist(@Body() wishlistData: any) {
-    return this.buyerservice.createWishlist(wishlistData);
-    }
-
-    @Post('request-customization')
-    requestCustomization(@Body() requestData: any) {
-    return this.buyerservice.requestCustomization(requestData);
-    }
-
-    @Get('view-order-history')
-    viewOrderHistory() {
-    return this.buyerservice.viewOrderHistory();
-    }
-
-    @Post('manage-budget')
-    manageBudget(@Body() budgetData: any) {
-    return this.buyerservice.manageBudget(budgetData);
-    }
-
-    @Post('access-dispute-resolution')
-    accessDisputeResolution(@Body() issueData: any) {
-    return this.buyerservice.accessDisputeResolution(issueData);
-    }
-
-    @Get('receive-gig-recommendations')
-    receiveGigRecommendations() {
-    return this.buyerservice.receiveGigRecommendations();
-    }
-
-
-    @Post('customize-notification-preferences')
-    customizeNotificationPreferences(@Body() preferencesData: any) {
-    return this.buyerservice.customizeNotificationPreferences(preferencesData);
-    }
-
-    @Post('report-inappropriate-content')
-    reportInappropriateContent(@Body() reportData: any) {
-    return this.buyerservice.reportInappropriateContent(reportData);
-    }
-
-    @Get('access-real-time-support')
-    accessRealTimeSupport() {
-    return this.buyerservice.accessRealTimeSupport();
+  @Post()
+  @UsePipes(new ValidationPipe)
+  async createBuyer(@Body() buyer: BuyerDto): Promise<BuyerDto> {
+    return this.buyerService.createBuyer(buyer);
   }
+
+  @Post(':buyerId/phone/:newPhoneNumber')
+  async modifyPhoneNumber(@Param('buyerId') buyerId: number, @Param('newPhoneNumber') newPhoneNumber: string): Promise<BuyerDto> {
+    return this.buyerService.modifyPhoneNumber(buyerId, newPhoneNumber);
+  }
+
+  @Get('null-fullname')
+  async getBuyerWithNullFullName(): Promise<Buyer[]> {
+    return this.buyerService.getBuyerWithNullFullName();
+  }
+
+  @Delete(':buyerId')
+  async deleteUser(@Param('buyerId') buyerId: number): Promise<void> {
+    await this.buyerService.deleteBuyer(buyerId);
+  }
+
+
+  // order
+  @Post('order')
+  @UsePipes(new ValidationPipe())
+  async createOrder(@Body() orderDto: orderDto): Promise<Order> {
+    const id=1
+    return this.buyerService.createOrder(orderDto, id);
+  }
+
+  @Get()
+  async getAllOrders(): Promise<Order[]> {
+    return this.buyerService.getAllOrders();
+  }
+
+  @Get(':id')
+  async getOrderById(@Param('id') id: number): Promise<Order> {
+    return this.buyerService.getOrderById(id);
+  }
+
+  @Put(':id')
+  async updateOrder(@Param('id') id: number, @Body() orderDto: orderDto): Promise<Order> {
+    return this.buyerService.updateOrder(id, orderDto);
+  }
+
+  @Delete(':id')
+  async deleteOrder(@Param('id') id: number): Promise<void> {
+    return this.buyerService.deleteOrder(id);
+  }
+
+
+  // Address
+
+  @Post('address')
+  async createAddress(@Body() addressDto: addressDto): Promise<Address> {
+    return this.buyerService.createAddress(addressDto);
+  }
+
+  @Get()
+  async getAllAddresses(): Promise<Address[]> {
+    return this.buyerService.getAllAddresses();
+  }
+
+  @Get(':id')
+  async getAddressById(@Param('id') id: number): Promise<Address> {
+    return this.buyerService.getAddressById(id);
+  }
+
+  @Put(':id')
+  async updateAddress(@Param('id') id: number, @Body() addressDto: addressDto): Promise<Address> {
+    return this.buyerService.updateAddress(id, addressDto);
+  }
+
+  @Delete(':id')
+  async deleteAddress(@Param('id') id: number): Promise<void> {
+    return this.buyerService.deleteAddress(id);
+  }
+
+
+
 }
