@@ -4,10 +4,14 @@ import {
   Entity,
   Generated,
   Index,
+  JoinColumn,
+  OneToMany,
   OneToOne,
+  PrimaryColumn,
   PrimaryGeneratedColumn,
   Relation,
 } from 'typeorm';
+import { GigEntity } from './gigs/gig.entity';
 import { SellerCredsEntity } from './sellerCreds.entity';
 
 @Entity('seller')
@@ -26,4 +30,16 @@ export class SellerEntity {
 
   @Column({ type: 'varchar', default: '' })
   pfp?: string;
+
+  @OneToOne(
+    () => SellerCredsEntity,
+    (sellerCreds: SellerCredsEntity) => sellerCreds.seller,
+    { cascade: true },
+  )
+  sellerCreds: SellerCredsEntity;
+
+  @OneToMany(() => GigEntity, (gig: GigEntity) => gig.gigOwner, {
+    cascade: true,
+  })
+  gigs: GigEntity[];
 }

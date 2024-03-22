@@ -5,11 +5,13 @@ import {
   Generated,
   Index,
   JoinColumn,
+  OneToMany,
   OneToOne,
   PrimaryColumn,
   PrimaryGeneratedColumn,
   Relation,
 } from 'typeorm';
+
 import { SellerEntity } from './seller.entity';
 
 @Entity('sellerCreds')
@@ -26,7 +28,7 @@ export class SellerCredsEntity {
   @Column({ type: 'varchar' })
   salt: string;
 
-  @OneToOne(() => SellerEntity)
+  @OneToOne(() => SellerEntity, (seller: SellerEntity) => seller.sellerCreds)
   @JoinColumn()
   seller: SellerEntity;
 }

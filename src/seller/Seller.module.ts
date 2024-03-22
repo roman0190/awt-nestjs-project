@@ -9,6 +9,8 @@ import { SellerAuthGuard } from './auth/sellerAuth.guard';
 import { SellerController } from './seller.controller';
 import { SellerEntity } from './seller.entity';
 import { SellerService } from './seller.service';
+
+import { GigsModule } from './gigs/gigs.module';
 import { SellerCredsEntity } from './sellerCreds.entity';
 
 @Module({
@@ -19,6 +21,7 @@ import { SellerCredsEntity } from './sellerCreds.entity';
       secret: jwtConstants.secret,
       signOptions: { expiresIn: '60d' },
     }),
+    GigsModule,
   ],
   controllers: [SellerController],
   providers: [

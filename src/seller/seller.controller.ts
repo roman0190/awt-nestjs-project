@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 
 import { Public } from './auth/constants';
+import { errorResponse } from './functions/errorResponse';
 import {
   SellerSignInDto,
   SellerSignUpDto,
@@ -30,7 +31,7 @@ export class SellerController {
     try {
       return await this.sellerService.sellerSignUp(signInBody);
     } catch (error) {
-      return this.errorResponse(error);
+      return errorResponse(error);
     }
   }
   @Public()
@@ -40,7 +41,7 @@ export class SellerController {
     try {
       return await this.sellerService.sellerSignIn(signInBody);
     } catch (error) {
-      return this.errorResponse(error);
+      return errorResponse(error);
     }
   }
 
@@ -65,20 +66,22 @@ export class SellerController {
       const { userId } = req.user;
       return await this.sellerService.update(userId, updateSellerDto);
     } catch (error) {
-      return this.errorResponse(error);
+      return errorResponse(error);
     }
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.sellerService.remove(+id);
-  }
+  // @Delete(':id')
+  // remove(@Param('id') id: string) {
+  //   return this.sellerService.remove(+id);
+  // }
 
-  private errorResponse(error: any) {
-    return {
-      message: [error.message],
-      error: 'Bad Request',
-      statusCode: 400,
-    };
+  @Delete('logout')
+  logout(@Request() req) {
+    req.logout((error) => {
+      if (error) return new Error('error logging out');
+      else {
+        return { message: 'loged out' };
+      }
+    });
   }
 }
