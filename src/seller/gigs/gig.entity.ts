@@ -4,9 +4,11 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   Unique,
 } from 'typeorm';
+import { PortfolioEntity } from '../portfolio/portfolio.entity';
 import { SellerEntity } from '../seller.entity';
 
 @Entity('gig')
@@ -37,4 +39,13 @@ export class GigEntity {
     onDelete: 'CASCADE',
   })
   gigOwner: SellerEntity;
+
+  @OneToMany(
+    () => PortfolioEntity,
+    (portfolio: PortfolioEntity) => portfolio.gig,
+    {
+      cascade: true,
+    },
+  )
+  portfolios: PortfolioEntity[];
 }

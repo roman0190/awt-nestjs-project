@@ -12,6 +12,7 @@ import { SellerService } from './seller.service';
 
 import { GigsModule } from './gigs/gigs.module';
 import { SellerCredsEntity } from './sellerCreds.entity';
+import { PortfolioModule } from './portfolio/portfolio.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { SellerCredsEntity } from './sellerCreds.entity';
       signOptions: { expiresIn: '60d' },
     }),
     GigsModule,
+    PortfolioModule,
   ],
   controllers: [SellerController],
   providers: [

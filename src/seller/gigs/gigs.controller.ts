@@ -36,13 +36,30 @@ export class GigsController {
   @Get('all')
   @Public()
   async findAll() {
-    return this.gigsService.findAll();
+    try {
+      return this.gigsService.findAll();
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+  @Get(':id/all')
+  @Public()
+  async findForUser(@Param('id') id: string) {
+    try {
+      return this.gigsService.findForOneUser(parseInt(id));
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 
   @Get(':id')
   @Public()
   async findOne(@Param('id') id: string) {
-    return this.gigsService.findOne(+id);
+    try {
+      return this.gigsService.findOne(+id);
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 
   @Patch('update/:id')

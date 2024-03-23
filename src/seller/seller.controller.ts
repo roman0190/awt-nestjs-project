@@ -48,14 +48,22 @@ export class SellerController {
 
   @Get()
   @Public()
-  findAll() {
-    return this.sellerService.findAll();
+  async findAll() {
+    try {
+      return this.sellerService.findAll();
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 
   @Get(':id')
   @Public()
-  findOne(@Param('id') id: string) {
-    return this.sellerService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    try {
+      return this.sellerService.findOne(+id);
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 
   @Patch('update')
@@ -85,6 +93,10 @@ export class SellerController {
 
   @Delete('logout')
   async logout(@Req() req) {
-    return await this.sellerService.logout();
+    try {
+      return await this.sellerService.logout();
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 }
