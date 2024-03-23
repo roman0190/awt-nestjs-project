@@ -1,77 +1,144 @@
-import { Body, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Req, Session } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
 
-type UserDTO = { username: string; email: string; password: string };
+import { Repository } from 'typeorm';
+import { checkPassword, generateHash } from './auth/hashings';
 
-let sellers: UserDTO[] = [
-  {
-    username: 'john',
-    email: 'john@gmail.com',
-    password: 'fowihfwsdn',
-  },
-  {
-    username: 'mark',
-    email: 'mark@gmail.com',
-    password: 'fowihfsgwsdn',
-  },
-  {
-    username: 'john',
-    email: 'mark@gmail.com',
-    password: 'fowihfwsfsdfdn',
-  },
-];
-
-const auth = {
-  user: null,
-  loggedIn: false,
-};
-
-let gigs: any = [];
+import { Request } from 'express';
+import { use } from 'passport';
+import {
+  SellerSignInDto,
+  SellerSignUpDto,
+  UpdateSellerDto,
+} from './seller.dto';
+import { SellerEntity } from './seller.entity';
+import { SellerCredsEntity } from './sellerCreds.entity';
 
 @Injectable()
 export class SellerService {
-  registerUser(user: UserDTO): object {
-    sellers.push(user);
-    return { ...user, success: true };
+  constructor(
+    @InjectRepository(SellerCredsEntity)
+    private sellerCredsRepository: Repository<SellerCredsEntity>,
+    @InjectRepository(SellerEntity)
+    private sellerRepository: Repository<SellerEntity>,
+    private jwtService: JwtService,
+  ) {}
+
+  async sellerSignUp(sellerSignUpData: SellerSignUpDto): Promise<object> {
+    try {
+      const username = sellerSignUpData.username;
+      const email = sellerSignUpData.email;
+      const password = sellerSignUpData.password;
+
+      const seller = new SellerEntity();
+      seller.username = username;
+      seller.email = email;
+      const savedSeller = await this.sellerRepository.save(seller);
+
+      const hash = await generateHash(password);
+      const pass = hash.pass;
+      const salt = hash.salt;
+      const sellerCreds = new SellerCredsEntity();
+      sellerCreds.id = savedSeller.id;
+      sellerCreds.username = username;
+      sellerCreds.password = pass;
+      sellerCreds.salt = salt;
+      sellerCreds.seller = savedSeller;
+      await this.sellerCredsRepository.save(sellerCreds);
+
+      const token = await this.getToken(sellerCreds);
+
+      const sellerResponse = {
+        ...seller,
+        access_token: token,
+      };
+
+      return sellerResponse;
+    } catch (error) {
+      throw new Error(this.handleError(error, 'create seller '));
+    }
   }
 
-  login(creds: { email: string; password: string }): object {
-    console.log(creds);
-    let user = sellers.find(
-      (u) => u.email === creds.email && u.password === creds.password,
-    );
-    if (!user) {
-      return { success: false };
+  async sellerSignIn(sellerSignInData: SellerSignInDto) {
+    let seller = await this.sellerCredsRepository.findOneBy({
+      username: sellerSignInData.username,
+    });
+
+    if (!seller) {
+      throw new Error('user does not exist');
     }
 
-    (auth.loggedIn = true), (auth.user = user);
-    return { ...user, success: true };
+    const matchedPassword = await checkPassword(
+      sellerSignInData.password + seller.salt,
+      seller.password,
+    );
+
+    if (!matchedPassword) {
+      throw new Error('wrong password');
+    }
+    const token = await this.getToken(seller);
+
+    let sellerObject = {
+      ...seller,
+      password: undefined,
+      salt: undefined,
+      access_token: token,
+    };
+
+    return sellerObject;
+  }
+  async findAll() {
+    return await this.sellerRepository.find();
   }
 
-  logout(): object {
-    (auth.loggedIn = false), (auth.user = null);
-    return { success: true };
+  async findOne(id: number) {
+    const user = await this.sellerRepository.findOneBy({ id: id });
+
+    return user;
   }
 
-  createGig(data: any): object {
-    gigs.push(data);
-    return { success: true, ...data };
+  async update(id: number, updateSellerDto: UpdateSellerDto) {
+    try {
+      await this.sellerRepository.update(id, updateSellerDto);
+      return this.sellerRepository.findOneBy({ id: id });
+    } catch (error) {
+      throw new Error(this.handleError(error, 'update seller'));
+    }
   }
-  editGig(id: string, data: any): object {
-    gigs = gigs.map((gig) => (gig.id === id ? { ...gig, ...data } : gig));
-    let gig = gigs.find((gig) => gig.id === id);
-    if (!gig) return { success: false, message: `no gig with id=${id}` };
-    return { success: true, queryid: id, ...gig };
+
+  async remove(id: number) {
+    const user = await this.sellerRepository.findOneBy({ id: id });
+    if (!user) throw new Error('user with that id does not exist');
+    await this.sellerRepository.remove(user);
+    return {
+      message: 'deleted',
+      deletedData: user,
+    };
   }
-  deleteGig(id: string): object {
-    gigs = gigs.filter((gig) => gig.id === id);
-    return { success: true, message: 'deleted' };
+  async logout() {
+    return { message: 'logged out' };
   }
-  getGig(id: string): object {
-    let gig = gigs.find((gig) => gig.id === id);
-    if (!gig) return { success: false, message: 'gig does not exist' };
-    return { success: true, gig };
+
+  private handleError(error: any, errorOccuredFunction: string): string {
+    let errorResponse: string;
+    const errorMessage = error.message;
+    switch (errorMessage) {
+      case 'duplicate key value violates unique constraint "UQ_83a576c17c115427311c5fc907e"':
+        errorResponse = 'username is already taken';
+        break;
+      case 'duplicate key value violates unique constraint "UQ_1f677314b76e057b56c48042ace"':
+        errorResponse = 'email address already exists';
+        break;
+      default:
+        errorResponse = errorMessage;
+    }
+
+    return errorResponse;
   }
-  getAllGigs(): object {
-    return { success: true, gigs };
+
+  private async getToken(seller: SellerCredsEntity) {
+    const payload = { sub: seller.id, username: seller.username };
+    return await this.jwtService.signAsync(payload);
   }
 }

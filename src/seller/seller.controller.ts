@@ -6,54 +6,85 @@ import {
   Param,
   Patch,
   Post,
-  Put,
-  Query,
+  Req,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
+
+import { Request } from 'express';
+import { Public } from './auth/constants';
+import { errorResponse } from './functions/errorResponse';
+import {
+  SellerSignInDto,
+  SellerSignUpDto,
+  UpdateSellerDto,
+} from './seller.dto';
 import { SellerService } from './seller.service';
 
 @Controller('seller')
 export class SellerController {
   constructor(private readonly sellerService: SellerService) {}
 
-  @Get()
-  req() {
-    return 'hello';
-  }
+  @Public()
   @Post('register')
-  registerUser(@Body() user: any): object {
-    return this.sellerService.registerUser(user);
+  @UsePipes(new ValidationPipe())
+  async sellerSignUp(@Body() signInBody: SellerSignUpDto) {
+    try {
+      return await this.sellerService.sellerSignUp(signInBody);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+  @Public()
+  @Post('login')
+  @UsePipes(new ValidationPipe())
+  async sellerSignIn(@Body() signInBody: SellerSignInDto) {
+    try {
+      return await this.sellerService.sellerSignIn(signInBody);
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 
-  @Put('/login')
-  loginUser(@Body() user: any): object {
-    return this.sellerService.login(user);
+  @Get()
+  @Public()
+  findAll() {
+    return this.sellerService.findAll();
   }
 
-  @Get('/logout')
-  logout(): object {
-    return this.sellerService.logout();
+  @Get(':id')
+  @Public()
+  findOne(@Param('id') id: string) {
+    return this.sellerService.findOne(+id);
   }
 
-  @Post('/create-gig')
-  create(@Body() data: any): object {
-    return this.sellerService.createGig(data);
+  @Patch('update')
+  @UsePipes(new ValidationPipe())
+  async update(
+    @Req() req: Request | any,
+    @Param('id') id: string,
+    @Body() updateSellerDto: UpdateSellerDto,
+  ) {
+    try {
+      const { userId } = req.user;
+
+      return await this.sellerService.update(userId, updateSellerDto);
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 
-  @Patch('/edit-gig')
-  edit(@Query('id') id: string, @Body() data: object): object {
-    return this.sellerService.editGig(id, data);
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    try {
+      return await this.sellerService.remove(+id);
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 
-  @Get('/gigs')
-  getGigs(): object {
-    return this.sellerService.getAllGigs();
-  }
-  @Get('/gig/:id')
-  getGig(@Param('id') id: string): object {
-    return this.sellerService.getGig(id);
-  }
-  @Delete('/delete-gig/:id')
-  deleteGig(@Param('id') id: string): object {
-    return this.sellerService.deleteGig(id);
+  @Delete('logout')
+  async logout(@Req() req) {
+    return await this.sellerService.logout();
   }
 }
