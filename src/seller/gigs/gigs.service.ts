@@ -28,7 +28,7 @@ export class GigsService {
       throw new Error('no  user found');
     }
     gig.gigOwner = gigOwner;
-    console.log(gig);
+
     try {
       const newGig = await this.gigRepository.save(gig);
       return newGig;
@@ -43,8 +43,11 @@ export class GigsService {
     }
   }
 
-  findAll() {
+  async findAll() {
     return this.gigRepository.find();
+  }
+  async findForOneUser(id: number) {
+    return this.gigRepository.find({ where: { gigOwner: { id: id } } });
   }
 
   findOne(id: number) {
@@ -57,7 +60,7 @@ export class GigsService {
       throw new Error('no gig found');
     }
     const gigOwnerId = gig.gigOwner?.id;
-    console.log(gigOwnerId);
+
     if (gigOwnerId !== userId) {
       throw new Error('Gig is not owned by this user');
     }
@@ -71,7 +74,7 @@ export class GigsService {
       throw new Error('no gig found');
     }
     const gigOwnerId = gig.gigOwner.id;
-    console.log(gigOwnerId);
+
     if (gigOwnerId !== userId) {
       throw new Error('Gig is not owned by this user');
     }
