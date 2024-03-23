@@ -27,6 +27,7 @@ export class SellerAuthGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
+
     const token = this.extractTokenFromHeader(request);
 
     if (!token) {
@@ -42,6 +43,7 @@ export class SellerAuthGuard implements CanActivate {
     } catch {
       throw new UnauthorizedException();
     }
+
     return true;
   }
 

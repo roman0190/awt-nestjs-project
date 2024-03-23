@@ -53,7 +53,11 @@ export class GigsService {
 
   async update(gigId: number, userId: number, updateGigDto: UpdateGigDto) {
     const gig = await this.gigRepository.findOneBy({ id: gigId });
+    if (!gig) {
+      throw new Error('no gig found');
+    }
     const gigOwnerId = gig.gigOwner?.id;
+    console.log(gigOwnerId);
     if (gigOwnerId !== userId) {
       throw new Error('Gig is not owned by this user');
     }
@@ -63,12 +67,19 @@ export class GigsService {
 
   async remove(id: number, userId: number) {
     const gig = await this.gigRepository.findOneBy({ id: id });
-    const gigOwnerId = gig.gigOwner?.id;
+    if (!gig) {
+      throw new Error('no gig found');
+    }
+    const gigOwnerId = gig.gigOwner.id;
+    console.log(gigOwnerId);
     if (gigOwnerId !== userId) {
       throw new Error('Gig is not owned by this user');
     }
 
     await this.gigRepository.remove(gig);
-    return gig;
+    return {
+      message: 'deleted',
+      deletedData: gig,
+    };
   }
 }

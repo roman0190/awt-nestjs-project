@@ -34,11 +34,13 @@ export class GigsController {
   }
 
   @Get('all')
+  @Public()
   async findAll() {
     return this.gigsService.findAll();
   }
 
   @Get(':id')
+  @Public()
   async findOne(@Param('id') id: string) {
     return this.gigsService.findOne(+id);
   }

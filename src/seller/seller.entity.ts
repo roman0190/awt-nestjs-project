@@ -5,6 +5,7 @@ import {
   Generated,
   Index,
   JoinColumn,
+  JoinTable,
   OneToMany,
   OneToOne,
   PrimaryColumn,
@@ -34,8 +35,9 @@ export class SellerEntity {
   @OneToOne(
     () => SellerCredsEntity,
     (sellerCreds: SellerCredsEntity) => sellerCreds.seller,
-    { cascade: true },
+    { cascade: true, onDelete: 'CASCADE' },
   )
+  @JoinColumn()
   sellerCreds: SellerCredsEntity;
 
   @OneToMany(() => GigEntity, (gig: GigEntity) => gig.gigOwner, {

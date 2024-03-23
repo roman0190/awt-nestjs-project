@@ -34,7 +34,7 @@ export class GigEntity {
 
   @ManyToOne(() => SellerEntity, (seller: SellerEntity) => seller.gigs, {
     eager: true,
+    onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'ownerId' })
   gigOwner: SellerEntity;
 }

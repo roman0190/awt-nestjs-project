@@ -29,6 +29,5 @@ export class SellerCredsEntity {
   salt: string;
 
   @OneToOne(() => SellerEntity, (seller: SellerEntity) => seller.sellerCreds)
-  @JoinColumn()
   seller: SellerEntity;
 }

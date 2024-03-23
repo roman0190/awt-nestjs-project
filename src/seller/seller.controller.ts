@@ -6,11 +6,12 @@ import {
   Param,
   Patch,
   Post,
-  Request,
+  Req,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 
+import { Request } from 'express';
 import { Public } from './auth/constants';
 import { errorResponse } from './functions/errorResponse';
 import {
@@ -46,11 +47,13 @@ export class SellerController {
   }
 
   @Get()
+  @Public()
   findAll() {
     return this.sellerService.findAll();
   }
 
   @Get(':id')
+  @Public()
   findOne(@Param('id') id: string) {
     return this.sellerService.findOne(+id);
   }
@@ -58,30 +61,30 @@ export class SellerController {
   @Patch('update')
   @UsePipes(new ValidationPipe())
   async update(
-    @Request() req,
+    @Req() req: Request | any,
     @Param('id') id: string,
     @Body() updateSellerDto: UpdateSellerDto,
   ) {
     try {
       const { userId } = req.user;
+
       return await this.sellerService.update(userId, updateSellerDto);
     } catch (error) {
       return errorResponse(error);
     }
   }
 
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.sellerService.remove(+id);
-  // }
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    try {
+      return await this.sellerService.remove(+id);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
 
   @Delete('logout')
-  logout(@Request() req) {
-    req.logout((error) => {
-      if (error) return new Error('error logging out');
-      else {
-        return { message: 'loged out' };
-      }
-    });
+  async logout(@Req() req) {
+    return await this.sellerService.logout();
   }
 }

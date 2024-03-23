@@ -1,8 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Req, Session } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
 import { checkPassword, generateHash } from './auth/hashings';
+
+import { Request } from 'express';
+import { use } from 'passport';
 import {
   SellerSignInDto,
   SellerSignUpDto,
@@ -43,9 +47,11 @@ export class SellerService {
       sellerCreds.seller = savedSeller;
       await this.sellerCredsRepository.save(sellerCreds);
 
+      const token = await this.getToken(sellerCreds);
+
       const sellerResponse = {
         ...seller,
-        access_token: await this.getToken(sellerCreds),
+        access_token: token,
       };
 
       return sellerResponse;
@@ -71,11 +77,13 @@ export class SellerService {
     if (!matchedPassword) {
       throw new Error('wrong password');
     }
+    const token = await this.getToken(seller);
+
     let sellerObject = {
       ...seller,
       password: undefined,
       salt: undefined,
-      access_token: await this.getToken(seller),
+      access_token: token,
     };
 
     return sellerObject;
@@ -99,8 +107,17 @@ export class SellerService {
     }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} seller`;
+  async remove(id: number) {
+    const user = await this.sellerRepository.findOneBy({ id: id });
+    if (!user) throw new Error('user with that id does not exist');
+    await this.sellerRepository.remove(user);
+    return {
+      message: 'deleted',
+      deletedData: user,
+    };
+  }
+  async logout() {
+    return { message: 'logged out' };
   }
 
   private handleError(error: any, errorOccuredFunction: string): string {
