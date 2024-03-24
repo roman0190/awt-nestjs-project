@@ -31,35 +31,16 @@ export class Buyer {
   filename: string;
 
 
-  @OneToMany(() => Order, (order:Order) => order.buyer, {cascade:true})
+  @OneToMany(() => Order, (order) => order.buyer, {cascade:true})
   orders: Order[];
 
-  // @OneToOne(() => Address, address => address.buyer, { cascade: true })
-  // @JoinColumn()
-  // address: Address;
+  @OneToOne(() => Address, (address) => address.buyer, { cascade: true })
+  address: Address;
 
 }
 
 
-// // buyer.entity.ts
-// import { Entity,PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-// import { Order } from './order.entity';
-// import { Address } from './address.entity';
 
-// @Entity()
-// export class Buyer {
-//   @PrimaryGeneratedColumn()
-//   id: number;
-
-//   @Column()
-//   name: string;
-
-//   @OneToMany(() => Order, order => order.buyer)
-//   orders: Order[];
-
-//   @OneToMany(() => Address, address => address.buyer)
-//   addresses: Address[];
-// }
 
 
 

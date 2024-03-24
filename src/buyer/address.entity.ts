@@ -1,5 +1,5 @@
 // address.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from 'typeorm';
 import { Buyer } from './buyer.entity';
 
 @Entity()
@@ -13,6 +13,10 @@ export class Address {
   @Column()
   city: string;
 
-  // @OneToOne(() => Buyer, buyer => buyer.address)
-  // buyer: Buyer;
+  @OneToOne(() => Buyer, buyer => buyer.address)
+  @JoinColumn()
+  buyer: Buyer;
+
+
+ 
 }
