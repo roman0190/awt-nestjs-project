@@ -8,6 +8,8 @@ import {
   IsStrongPassword,
   MaxLength,
   MinLength,
+  ValidationOptions,
+  registerDecorator,
 } from 'class-validator';
 
 export class SellerSignUpDto {
@@ -32,8 +34,14 @@ export class SellerSignUpDto {
   @IsNotEmpty()
   password: string;
 }
+
 export class SellerSignInDto extends PartialType(SellerSignUpDto) {
   username: string;
   password: string;
 }
 export class UpdateSellerDto extends PartialType(SellerSignUpDto) {}
+
+export class fileUploadDto {
+  @IsNotEmpty()
+  file: File;
+}

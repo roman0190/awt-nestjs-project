@@ -7,17 +7,24 @@ import {
   Patch,
   Post,
   Req,
+  Res,
+  UploadedFile,
+  UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Request } from 'express';
+import { MulterError, diskStorage } from 'multer';
+import { stringify } from 'querystring';
 import { Public } from './auth/constants';
 import { errorResponse } from './functions/errorResponse';
 import {
   SellerSignInDto,
   SellerSignUpDto,
   UpdateSellerDto,
+  fileUploadDto,
 } from './seller.dto';
 import { SellerService } from './seller.service';
 
@@ -46,6 +53,22 @@ export class SellerController {
     }
   }
 
+  @Patch('update')
+  @UsePipes(new ValidationPipe())
+  async update(
+    @Req() req: Request | any,
+    @Param('id') id: string,
+    @Body() updateSellerDto: UpdateSellerDto,
+  ) {
+    try {
+      const { userId } = req.user;
+
+      return await this.sellerService.update(userId, updateSellerDto);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+
   @Get()
   @Public()
   async findAll() {
@@ -66,22 +89,6 @@ export class SellerController {
     }
   }
 
-  @Patch('update')
-  @UsePipes(new ValidationPipe())
-  async update(
-    @Req() req: Request | any,
-    @Param('id') id: string,
-    @Body() updateSellerDto: UpdateSellerDto,
-  ) {
-    try {
-      const { userId } = req.user;
-
-      return await this.sellerService.update(userId, updateSellerDto);
-    } catch (error) {
-      return errorResponse(error);
-    }
-  }
-
   @Delete(':id')
   async remove(@Param('id') id: string) {
     try {
@@ -91,10 +98,54 @@ export class SellerController {
     }
   }
 
-  @Delete('logout')
-  async logout(@Req() req) {
+  @Post('upload-pfp')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      fileFilter: (req, file, cb) => {
+        if (file.originalname.match(/^.*\.(jpg|webp|png|jpeg)$/))
+          cb(null, true);
+        else {
+          cb(new MulterError('LIMIT_UNEXPECTED_FILE', 'image'), false);
+        }
+      },
+      limits: { fileSize: 2000000 },
+      storage: diskStorage({
+        destination: './uploads',
+        filename: function (req: Request, file, cb) {
+          try {
+            // @ts-ignore
+            const userId = req.user?.userId;
+            const extention = file.mimetype.split('/')[1];
+
+            const fileName = userId
+              ? userId + 'pfp.' + extention
+              : Date.now() + file.originalname;
+
+            cb(null, fileName);
+          } catch (error) {
+            cb(new Error('Illegal file name'), null);
+          }
+        },
+      }),
+    }),
+  )
+  async uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: Request,
+  ) {
     try {
-      return await this.sellerService.logout();
+      return await this.sellerService.setUserPfp(file, req);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+
+  @Public()
+  @Get('/getimage/:name')
+  getImages(@Param('name') name, @Res() res) {
+    try {
+      res.sendFile(name, { root: './uploads' });
+      return;
     } catch (error) {
       return errorResponse(error);
     }
