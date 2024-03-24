@@ -33,8 +33,11 @@ export class BuyerDto {
 
   filename: string;
 
-  //   @IsPhoneNumber()
-//   phoneNumber: string;
+  @Optional()
+  orders:any;
+
+  @Optional()
+  address:any;
 }
 
 export class loginDTO{
@@ -57,6 +60,9 @@ street: string;
 @IsString()
 city: string;
 
+@Optional()
+buyer:any;
+
 }
 
 
@@ -68,6 +74,9 @@ id:number;
 
 @IsString()
 product: string;
+
+@Optional()
+buyer:any;
 
 }
 
