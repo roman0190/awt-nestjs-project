@@ -2,7 +2,7 @@ import { HttpStatus, Injectable, Req, Session } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository } from 'typeorm';
+import { EntityNotFoundError, Repository } from 'typeorm';
 import { checkPassword, generateHash } from './auth/hashings';
 
 import { Request } from 'express';
@@ -109,7 +109,7 @@ export class SellerService {
 
   async remove(id: number) {
     const user = await this.sellerRepository.findOneBy({ id: id });
-    if (!user) throw new Error('user with that id does not exist');
+    if (!user) throw new EntityNotFoundError(SellerEntity, { id: id });
     await this.sellerRepository.remove(user);
     return {
       message: 'deleted',
@@ -118,6 +118,19 @@ export class SellerService {
   }
   async logout() {
     return { message: 'logged out' };
+  }
+
+  async setUserPfp(file: Express.Multer.File, req: Request) {
+    // @ts-ignore
+    const userId = req.user.userId;
+    await this.sellerRepository.update(userId, {
+      pfp: file.filename,
+    });
+    const user = await this.sellerRepository.findOneBy({ id: userId });
+    if (!user) {
+      throw new EntityNotFoundError(SellerEntity, { id: userId });
+    }
+    return user;
   }
 
   private handleError(error: any, errorOccuredFunction: string): string {
