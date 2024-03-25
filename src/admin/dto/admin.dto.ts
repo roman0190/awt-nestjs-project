@@ -26,7 +26,9 @@ export class AdminRegDto {
     @Matches(/^[0-9]+$/, { message: 'Phone number field must contain only digits' })
     number: string;
 
-    role?: string
+    role: string
+
+    path: string
 
     users: UserEntity[];
 

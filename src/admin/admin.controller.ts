@@ -30,7 +30,7 @@ import { UserEntity } from './entities/user.entity';
 import { AdminRegEntity } from './entities/admin.entity';
 import { AuthGuard } from './auth.guard';
 import { GigEntity } from './entities/gig.entity';
-import { AdditionalInfoEntity } from './entities/AdditionalInfo.entity';
+// import { AdditionalInfoEntity } from './entities/AdditionalInfo.entity';
 
 
 
@@ -59,12 +59,10 @@ export class AdminController {
   )
   @UsePipes(new ValidationPipe())
   async AdminReg(@Body() adminReg: AdminRegDto, @UploadedFile() file: Express.Multer.File) {
-    const role ='admin'
     const salt = await bcrypt.genSalt();
     const hassedpassed = await bcrypt.hash(adminReg.password, salt);
-
     adminReg.password = hassedpassed
-    adminReg.role = role
+    adminReg.path = file.path
     return await this.adminService.AdminReg(adminReg);
     // console.log(file.path)
   }
@@ -83,27 +81,31 @@ export class AdminController {
   }
 
 //4
-  @Get('search/:adminId')
-  //@UseGuards(AuthGuard)
-  async getAdminInfo(@Param('adminId',ParseIntPipe) adminId: number) {
-    return await this.adminService.getAdminInfo(adminId);
+  @Get('view-profile/own')
+  @UseGuards(AuthGuard)
+  async getAdminInfo(@Req() req) {
+    const token = req.headers.authorization.replace('Bearer ', ''); 
+    return await this.adminService.getAdminInfo(token);
   }
 //5
-  @Delete('delete/:adminId')
-  //@UseGuards(AuthGuard)
-  async deleteAdminInfo(@Param('adminId',ParseIntPipe) adminId: number) {
-    return await this.adminService.deleteAdminInfo(adminId);
+  @Delete('delete-account/own')
+  @UseGuards(AuthGuard)
+  async deleteAdminInfo(@Req() req) {
+    const token = req.headers.authorization.replace('Bearer ', '');
+    return await this.adminService.deleteAdminInfo(token);
   }
 //6
-  @Patch('edit-admin/:userID')
-  //@UseGuards(AuthGuard)
-  async editAdmin(@Param("userID",ParseIntPipe) userID, @Body()editdata:Partial<AdminRegEntity>){
-    return await this.adminService.editAdmin(userID,editdata)
+  @Patch('edit-profile/own')
+  @UseGuards(AuthGuard)
+  async editAdmin(@Body()editdata:Partial<AdminRegEntity>,@Req() req){
+    const token = req.headers.authorization.replace('Bearer ', ''); 
+    return await this.adminService.editAdmin(token,editdata)
 
   }
 
 //7
-@Patch("add-more-info")
+@Post("add-more-info")
+@UsePipes(new ValidationPipe())
 @UseGuards(AuthGuard) 
 async addMoreInfo(@Body() additionalInfo: AdditionalInfoDto, @Req() req){
   const token = req.headers.authorization.replace('Bearer ', ''); 
@@ -111,13 +113,23 @@ async addMoreInfo(@Body() additionalInfo: AdditionalInfoDto, @Req() req){
   
 }
 //8
+@Patch("edit-more-info")
+@UsePipes(new ValidationPipe())
+@UseGuards(AuthGuard) 
+async editMoreInfo(@Body() additionalInfo: AdditionalInfoDto, @Req() req){
+  const token = req.headers.authorization.replace('Bearer ', ''); 
+  return this.adminService.editmoreInfo(additionalInfo, token);
+}
+//9
 @Post('send-announcement')
+@UsePipes(new ValidationPipe())
 @UseGuards(AuthGuard) 
   async sendAnnouncement(@Body() announcementDto: AnnouncementDto,@Req() req) {
     const token = req.headers.authorization.replace('Bearer ', ''); 
     return this.adminService.sendAnnouncement(announcementDto,token);
   }
-//9
+
+//10
 @Delete('delete-announcement/:id')
 @UseGuards(AuthGuard) 
 async deleteAnnouncement(@Param('id',ParseIntPipe) id:number,@Req() req){
@@ -126,7 +138,7 @@ async deleteAnnouncement(@Param('id',ParseIntPipe) id:number,@Req() req){
 }
 
 
-//10 Admin Manage Users
+//11Admin Manage Users
   @Post('users/create-user')
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe())
@@ -135,29 +147,30 @@ async deleteAnnouncement(@Param('id',ParseIntPipe) id:number,@Req() req){
       return await this.adminService.CreateUser(userdata,token)
   }
 
-//11
+//12
   @Get('users/all')
+  @UseGuards(AuthGuard)
   async getAllUsers() {
     return await this.adminService.getAllUsers();
   }
 
-//12
+//13
   @Patch('users/edit-user/:userID')
-  //@UseGuards(AuthGuard)
+  @UseGuards(AuthGuard)
   async editUser(@Param("userID",ParseIntPipe) userID, @Body()editdata:Partial<UserEntity>){
     return await this.adminService.editUser(userID,editdata)
   }
 
-//13
+//14
   @Delete('users/delete/:userId')
-  //@UseGuards(AuthGuard)
+  @UseGuards(AuthGuard)
   async deleteUser(@Param('userId',ParseIntPipe) userID: number) {
     return await this.adminService.deleteUser(userID);
   }
 
-//14 Admin Manage Users gigs 
+//15 Admin Manage Users gigs 
   @Get('gigs/:status')
-  //@UseGuards(AuthGuard)
+  @UseGuards(AuthGuard)
   async getGigsByStatus(@Param('status') status: string): Promise<GigEntity[]> {
     if (status === 'unapproved') {
       return this.adminService.getUnapprovedGigs();
@@ -167,16 +180,16 @@ async deleteAnnouncement(@Param('id',ParseIntPipe) id:number,@Req() req){
       throw new Error('Invalid status parameter');
     }
   }
-//15
+//16
   @Post('gigs/control-approval/:gigId')
-  //@UseGuards(AuthGuard)
+  @UseGuards(AuthGuard)
   async toggleGigApproval(@Param('gigId',ParseIntPipe) gigId: number): Promise<GigEntity> {
     return await this.adminService.toggleGigApproval(gigId);
   }
 
-//16
-@Patch('logout')
-// @UseGuards(AuthGuard)
+//17
+@Post('logout')
+@UseGuards(AuthGuard)
 async logout(){
  return await this.adminService.logout();
 }

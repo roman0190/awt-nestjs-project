@@ -12,7 +12,6 @@ export class AnnouncementEntity {
   @Column('text')
   content: string;
 
-  // You can include additional fields as needed
 
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
   timestamp: Date;

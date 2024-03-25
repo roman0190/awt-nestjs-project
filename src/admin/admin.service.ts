@@ -48,10 +48,14 @@ export class AdminService {
   }
  
 //2
-  async Adminlogin(logdata: logDto):Promise<{ access_token: string }> {
+  async Adminlogin(logdata: logDto):Promise<any> {
     const { email, password } = logdata;
     const user = await this.adminRepository.findOne({where:{email}});
+    if(!user){
+      return ("user not found")
+    }
     logdata.id = user.id
+    
     if (user) {
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (isPasswordValid) {
@@ -71,7 +75,9 @@ export class AdminService {
     return await this.adminRepository.find();
   }
 //4
-  async getAdminInfo(adminId: number):Promise<AdminRegEntity> {
+  async getAdminInfo(token):Promise<AdminRegEntity>{
+    const decodedToken = this.jwtService.verify(token);
+      const adminId = decodedToken.id;
       return await this.adminRepository.findOne({
         where:{id:adminId},
         relations : {
@@ -84,8 +90,9 @@ export class AdminService {
     }
 
 //5
-    async deleteAdminInfo(adminId: number): Promise<any> {
-      
+    async deleteAdminInfo(token): Promise<any> {
+      const decodedToken = this.jwtService.verify(token);
+      const adminId = decodedToken.id;
       const adminToDelete = await this.adminRepository.findOne({where:{id:adminId},relations:{users:true}});
 
       if (!adminToDelete) {
@@ -102,12 +109,13 @@ export class AdminService {
     }
 
 //6
-    async editAdmin(userID: number, editData: Partial<AdminRegEntity>): Promise<any> {
-
-      const userToUpdate = await this.adminRepository.findOne({where:{id:userID}});
+    async editAdmin(token,editData: Partial<AdminRegEntity>): Promise<any> {
+      const decodedToken = this.jwtService.verify(token);
+      const adminId = decodedToken.id;
+      const userToUpdate = await this.adminRepository.findOne({where:{id:adminId}});
 
       if (!userToUpdate) {
-        return {meaasage:`User with ID ${userID} not found.`};
+        return {meaasage:`User with ID ${adminId} not found.`};
       }
 
       Object.assign(userToUpdate, editData);
@@ -115,22 +123,46 @@ export class AdminService {
       return await this.adminRepository.save(userToUpdate);
     }
 //7
-  async AddmoreInfo(additionalInfo: AdditionalInfoEntity, token: string): Promise<any> {
-    try {
-      const decodedToken = this.jwtService.verify(token); 
+async AddmoreInfo(additionalInfo: AdditionalInfoEntity, token: string): Promise<any> {
+  try {
+      const decodedToken = this.jwtService.verify(token);
       const adminId = decodedToken.id;
-      additionalInfo.admin = adminId;
-
-      const findInfo = await this.additionalInfoRepository.findOne({where:{admin:adminId}})
-
-      Object.assign(findInfo,additionalInfo);
       
-      return await this.additionalInfoRepository.save(findInfo);
-    } catch (error) {
-      return {message:'Information Already added'};
-    }
+      const newInfo = new AdditionalInfoEntity();
+      newInfo.admin = adminId;
+
+      Object.assign(newInfo, additionalInfo);
+
+      const savedInfo = await this.additionalInfoRepository.save(newInfo);
+
+      return savedInfo;
+  } catch (error) {
+      return { message: 'Information Already added' };
   }
+}
 //8
+async editmoreInfo(additionalInfo: AdditionalInfoEntity, token: string): Promise<any> {
+  try {
+      const decodedToken = this.jwtService.verify(token);
+      const adminId = decodedToken.id;
+
+      let existingInfo = await this.additionalInfoRepository.findOne({ where: { admin: adminId } });
+
+      if (!existingInfo) {
+          return { message: 'No information found for this admin' };
+      }
+
+      Object.assign(existingInfo, additionalInfo);
+
+      const savedInfo = await this.additionalInfoRepository.save(existingInfo);
+
+      return savedInfo;
+  } catch (error) {
+      return { message: 'Error editing information' };
+  }
+}
+
+//9
   async sendAnnouncement(announcementDto: AnnouncementDto,token:string): Promise<AnnouncementEntity> {
     try {
       const decodedToken = this.jwtService.verify(token); 
@@ -142,7 +174,7 @@ export class AdminService {
       throw new InternalServerErrorException('Failed to send announcement');
     }
   }
- //9 
+ //10
   async deleteAnnouncement(id: number, token: string): Promise<any> {
     const decodedToken = this.jwtService.verify(token);
     const adminId = decodedToken.id;
@@ -155,11 +187,11 @@ export class AdminService {
     if (announcement.admin.id!== adminId) {
       return ('You are not authorized to delete this announcement');
     }
-    // await this.announcementRepository.remove(announcement);
-    return ("Deleted Successfully")
+    await this.announcementRepository.remove(announcement);
+    // return ("Deleted Successfully")
   }
 
-//10
+//11
 
     async CreateUser(userdata:UserEntity,token:string):Promise<any>{
      try{
@@ -186,12 +218,12 @@ export class AdminService {
      }  
     }
 
-//11
+//12
     async getAllUsers(): Promise<UserEntity[]> {
       return await this.userRepository.find();
     }
 
-//12
+//13
   async editUser(userID: number, editData: Partial<UserEntity>): Promise<any> {
 
     const userToUpdate = await this.userRepository.findOne({where:{id:userID}});
@@ -205,7 +237,7 @@ export class AdminService {
     return await this.userRepository.save(userToUpdate);
   }
 
-//13
+//14
 async deleteUser(userID: number): Promise<any> {
       
   const userToDelete = await this.userRepository.findOne({where:{id:userID}});
@@ -216,7 +248,7 @@ async deleteUser(userID: number): Promise<any> {
 
   await this.userRepository.remove(userToDelete);
 }
-//13
+//15
 async getUnapprovedGigs(): Promise<GigEntity[]> {
   try {
     return await this.gigRepository.find({ where: { approved: false } });
@@ -232,7 +264,7 @@ async getApprovedGigs(): Promise<GigEntity[]> {
   }
 }
 
-//14
+//16
 async toggleGigApproval(gigId: number): Promise<any> {
   const gig = await this.gigRepository.findOne({ where: { id: gigId } });
   if (!gig) {
@@ -243,7 +275,7 @@ async toggleGigApproval(gigId: number): Promise<any> {
   return await this.gigRepository.save(gig);
 }
 
-//15
+//17
 async logout() {
  const payload = {
       name :"Romppan",
