@@ -27,9 +27,8 @@ export class AdminRegEntity {
     @Column({ type: 'varchar', length: 11 })
     role:string
 
-    @Column({ type: 'varchar', length: 255 })
-    path:string
-  
+    @Column({ type: 'varchar', length: 255, nullable: true, default: null })
+    path?: string | null;
 
     @OneToMany(() => UserEntity, user => user.admin ,{cascade : true})
     users: UserEntity[];

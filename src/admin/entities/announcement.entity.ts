@@ -14,7 +14,7 @@ export class AnnouncementEntity {
 
 
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
-  timestamp: Date;
+  time: Date;
 
   @ManyToOne(() => AdminRegEntity, admin => admin.announcements,{onDelete:"CASCADE"})
   admin: AdminRegEntity;

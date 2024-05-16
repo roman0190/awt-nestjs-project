@@ -28,8 +28,6 @@ export class AdminRegDto {
 
     role: string
 
-    path: string
-
     users: UserEntity[];
 
     announcements:AnnouncementEntity[]
@@ -63,6 +61,8 @@ export class logDto {
     password:string
 
     id:number
+
+    name: string
 
 }
 
