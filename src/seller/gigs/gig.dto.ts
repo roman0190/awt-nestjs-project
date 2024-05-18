@@ -20,17 +20,13 @@ export class CreateGigDto {
   @IsNotEmpty()
   description: string;
 
-  @IsNumber()
   @IsNotEmpty()
   price: number;
 
-  @IsString()
-  @IsNotEmpty()
-  gigImage: string;
+  // @IsNotEmpty()
+  gigImage?: any;
 
-  @IsString()
-  @IsNotEmpty()
-  gigThumbnail: string;
+  gigThumbnail?: any;
 }
 
 export class UpdateGigDto extends PartialType(CreateGigDto) {}

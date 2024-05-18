@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository } from 'typeorm';
+import { EntityNotFoundError, Repository } from 'typeorm';
 import { SellerEntity } from '../seller.entity';
 import { CreateGigDto, UpdateGigDto } from './gig.dto';
 import { GigEntity } from './gig.entity';
@@ -50,8 +50,12 @@ export class GigsService {
     return this.gigRepository.find({ where: { gigOwner: { id: id } } });
   }
 
-  findOne(id: number) {
-    return this.gigRepository.findOneBy({ id: id });
+  async findOne(id: number) {
+    const gig = await this.gigRepository.findOneBy({ id: id });
+    if (!gig) {
+      throw new EntityNotFoundError(GigEntity, { id: id });
+    }
+    return gig;
   }
 
   async update(gigId: number, userId: number, updateGigDto: UpdateGigDto) {
@@ -64,6 +68,7 @@ export class GigsService {
     if (gigOwnerId !== userId) {
       throw new Error('Gig is not owned by this user');
     }
+    console.log('updata', updateGigDto);
     await this.gigRepository.update(gigId, updateGigDto);
     return this.gigRepository.findOneBy({ id: gigId });
   }
