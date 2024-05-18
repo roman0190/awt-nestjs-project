@@ -4,15 +4,21 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
-  Request,
+  Req,
+  UploadedFile,
+  UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { CreateGigDto, UpdateGigDto } from './gig.dto';
 
 import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Request } from 'express';
+import { MulterError, diskStorage } from 'multer';
 import { Public } from '../auth/constants';
 import { errorResponse } from '../functions/errorResponse';
 import { GigsService } from './gigs.service';
@@ -22,12 +28,51 @@ export class GigsController {
   constructor(private readonly gigsService: GigsService) {}
 
   @Post('create')
+  @UseInterceptors(
+    FileInterceptor('gigImage', {
+      fileFilter: (req, file, cb) => {
+        if (file.originalname.match(/^.*\.(jpg|webp|png|jpeg)$/))
+          cb(null, true);
+        else {
+          cb(new MulterError('LIMIT_UNEXPECTED_FILE', 'image'), false);
+        }
+      },
+      limits: { fileSize: 9000000 },
+      storage: diskStorage({
+        destination: './uploads',
+        filename: function (req: Request, file, cb) {
+          try {
+            // @ts-ignore
+            const userId = req.user?.userId;
+            const extention = file.mimetype.split('/')[1];
+
+            const fileName = userId
+              ? userId + 'gigImg.' + Date.now() + extention
+              : Date.now() + file.originalname;
+
+            cb(null, fileName);
+          } catch (error) {
+            cb(new Error('Illegal file name'), null);
+          }
+        },
+      }),
+    }),
+  )
   @UsePipes(new ValidationPipe())
-  async create(@Request() req, @Body() createGigDto: CreateGigDto) {
+  async create(
+    @Req() req,
+    @Body() createGigDto: CreateGigDto,
+    @UploadedFile() gigImage: Express.Multer.File,
+  ) {
+    console.log('create', gigImage);
     try {
       const { userId } = req.user;
 
-      return await this.gigsService.create(userId, createGigDto);
+      return await this.gigsService.create(userId, {
+        ...createGigDto,
+        gigImage: gigImage.filename,
+        gigThumbnail: gigImage.filename,
+      });
     } catch (error) {
       return errorResponse(error);
     }
@@ -37,16 +82,16 @@ export class GigsController {
   @Public()
   async findAll() {
     try {
-      return this.gigsService.findAll();
+      return await this.gigsService.findAll();
     } catch (error) {
       return errorResponse(error);
     }
   }
   @Get(':id/all')
   @Public()
-  async findForUser(@Param('id') id: string) {
+  async findForUser(@Param('id', ParseIntPipe) id: number) {
     try {
-      return this.gigsService.findForOneUser(parseInt(id));
+      return await this.gigsService.findForOneUser(id);
     } catch (error) {
       return errorResponse(error);
     }
@@ -56,29 +101,64 @@ export class GigsController {
   @Public()
   async findOne(@Param('id') id: string) {
     try {
-      return this.gigsService.findOne(+id);
+      return await this.gigsService.findOne(+id);
     } catch (error) {
       return errorResponse(error);
     }
   }
 
   @Patch('update/:id')
+  @UseInterceptors(
+    FileInterceptor('gigImage', {
+      fileFilter: (req, file, cb) => {
+        if (file.originalname.match(/^.*\.(jpg|webp|png|jpeg)$/))
+          cb(null, true);
+        else {
+          cb(new MulterError('LIMIT_UNEXPECTED_FILE', 'image'), false);
+        }
+      },
+      limits: { fileSize: 9000000 },
+      storage: diskStorage({
+        destination: './uploads',
+        filename: function (req: Request, file, cb) {
+          try {
+            // @ts-ignore
+            const userId = req.user?.userId;
+            const extention = file.mimetype.split('/')[1];
+
+            const fileName = userId
+              ? userId + 'gigImg.' + Date.now() + extention
+              : Date.now() + file.originalname;
+
+            cb(null, fileName);
+          } catch (error) {
+            cb(new Error('Illegal file name'), null);
+          }
+        },
+      }),
+    }),
+  )
   @UsePipes(new ValidationPipe())
   async update(
-    @Request() req,
+    @Req() req,
     @Param('id') gigId: string,
     @Body() updateGigDto: UpdateGigDto,
+    @UploadedFile() gigImage: Express.Multer.File,
   ) {
     try {
       const { userId } = req.user;
-      return await this.gigsService.update(+gigId, userId, updateGigDto);
+      let data = updateGigDto;
+      if (gigImage) {
+        data = { ...data, gigImage: gigImage.filename };
+      }
+      return await this.gigsService.update(+gigId, userId, data);
     } catch (error) {
       return errorResponse(error);
     }
   }
 
   @Delete('delete/:id')
-  async remove(@Request() req, @Param('id') id: string) {
+  async remove(@Req() req, @Param('id') id: string) {
     try {
       const { userId } = req.user;
       return await this.gigsService.remove(+id, userId);

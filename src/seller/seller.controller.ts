@@ -35,7 +35,7 @@ export class SellerController {
   @Public()
   @Post('register')
   @UsePipes(new ValidationPipe())
-  async sellerSignUp(@Body() signInBody: SellerSignUpDto) {
+  async sellerSignUp(@Body() signInBody: SellerSignInDto) {
     try {
       return await this.sellerService.sellerSignUp(signInBody);
     } catch (error) {

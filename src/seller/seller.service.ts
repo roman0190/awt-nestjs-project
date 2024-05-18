@@ -25,7 +25,7 @@ export class SellerService {
     private jwtService: JwtService,
   ) {}
 
-  async sellerSignUp(sellerSignUpData: SellerSignUpDto): Promise<object> {
+  async sellerSignUp(sellerSignUpData: any): Promise<object> {
     try {
       const username = sellerSignUpData.username;
       const email = sellerSignUpData.email;
@@ -60,7 +60,7 @@ export class SellerService {
     }
   }
 
-  async sellerSignIn(sellerSignInData: SellerSignInDto) {
+  async sellerSignIn(sellerSignInData: any) {
     let seller = await this.sellerCredsRepository.findOneBy({
       username: sellerSignInData.username,
     });
@@ -101,7 +101,7 @@ export class SellerService {
   async update(id: number, updateSellerDto: UpdateSellerDto) {
     try {
       await this.sellerRepository.update(id, updateSellerDto);
-      return this.sellerRepository.findOneBy({ id: id });
+      return await this.sellerRepository.findOneBy({ id: id });
     } catch (error) {
       throw new Error(this.handleError(error, 'update seller'));
     }
